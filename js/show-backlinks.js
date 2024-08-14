@@ -41,10 +41,10 @@ onReady(function() {
 
 			if ($mentioned.find('a.mentioned-' + reply_id).length != 0) {
 				return;
-			}
-
-			let link = $('<a class="mentioned-' + reply_id + '" onclick="highlightReply(\'' + reply_id + '\');" href="#' + reply_id + '">&gt;&gt;' +
+			
+			var $link = $('<a class="mentioned-' + reply_id + ' highlight-link" data-cite="' + reply_id + '" href="#' + reply_id + '">&gt;&gt;' +
 				reply_id + '</a>');
+        
 			link.appendTo($mentioned)
 
 			if (window.init_hover) {

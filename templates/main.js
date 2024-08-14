@@ -222,26 +222,23 @@ function getCookie(cookie_name) {
 	}
 }
 
-function highlightReply(id) {
-	if (typeof window.event != "undefined" && event.which == 2) {
-		// don't highlight on middle click
-		return true;
-	}
+function highlightReply(id, evt) {
+    if (evt && evt.button === 1) {
+        return true;
+    }
 
-	let divs = document.getElementsByTagName('div');
-	for (var i = 0; i < divs.length; i++)
-	{
-		if (divs[i].className.indexOf('post') != -1) {
-			divs[i].className = divs[i].className.replace(/highlighted/, '');
-		}
-	}
-	if (id) {
-		let post = document.getElementById('reply_' + id);
-		if (post) {
-			post.className += ' highlighted';
-		}
-		window.location.hash = id;
-	}
+    document.querySelectorAll('div.post').forEach(div => {
+        div.classList.remove('highlighted');
+    });
+
+    if (id) {
+        const post = document.getElementById(`reply_${id}`);
+        if (post) {
+            post.classList.add('highlighted');
+            window.location.hash = id;
+        }
+    }
+		
 	return true;
 }
 
@@ -273,27 +270,27 @@ function doPost(form) {
 }
 
 function citeReply(id, with_link) {
-	let textarea = document.getElementById('body');
-	if (!textarea) {
-		return false;
-	}
+    var textarea = document.getElementById('body');
 
-	if (document.selection) {
-		// IE
-		textarea.focus();
-		let sel = document.selection.createRange();
-		sel.text = '>>' + id + '\n';
-	} else if (textarea.selectionStart || textarea.selectionStart == '0') {
-		let start = textarea.selectionStart;
-		let end = textarea.selectionEnd;
-		textarea.value = textarea.value.substring(0, start) + '>>' + id + '\n' + textarea.value.substring(end, textarea.value.length);
+    if (!textarea) return false;
 
-		textarea.selectionStart += ('>>' + id).length + 1;
-		textarea.selectionEnd = textarea.selectionStart;
-	} else {
-		// ???
-		textarea.value += '>>' + id + '\n';
-	}
+    var insertionText = '>>' + id + '\n';
+
+    if (document.selection) {
+        // IE
+        textarea.focus();
+        var sel = document.selection.createRange();
+        sel.text = insertionText;
+    } else if (textarea.selectionStart !== undefined) {
+        var start = textarea.selectionStart;
+        var end = textarea.selectionEnd;
+        textarea.value = textarea.value.substring(0, start) + insertionText + textarea.value.substring(end);
+
+        textarea.selectionStart = textarea.selectionEnd = start + insertionText.length;
+    } else {
+        textarea.value += insertionText;
+    }
+
 	if (typeof $ != 'undefined') {
 		let select = document.getSelection().toString();
 		if (select) {
@@ -367,7 +364,9 @@ var script_settings = function(script_name) {
 };
 
 function init() {
-	initStyleChooser();
+	if (active_page !== 'page') {
+		init_stylechooser();
+	}
 
 	{% endverbatim %}
 	{% if config.allow_delete %}
@@ -395,6 +394,40 @@ function ready() {
 		onready_callbacks[i]();
 	}
 }
+
+function addLinkListenersCite(selector, callback) {
+    document.querySelector('body').addEventListener('click', (event) => {
+        if (event.target.matches(selector)) {
+            event.preventDefault();
+
+            var cite = event.target.getAttribute('data-cite');
+
+            if (callback(cite, event)) {
+                window.location.href = event.target.href;
+            }
+        }
+    });
+}
+
+function addFormListener() {
+    var form = document.getElementById('post-form');
+
+    if (form) {
+        form.addEventListener('submit', (event) => {
+            if (!dopost(form)) {
+                event.preventDefault();
+            }
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+	ready();
+	rememberStuff();
+	addLinkListenersCite('.highlight-link', highlightReply);
+	addLinkListenersCite('.cite-link', citeReply);
+	addFormListener();
+});
 
 {% endverbatim %}
 
